@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vẽ Paint và gửi tệp PNG qua API</title>
+  <style>
+    #controls {
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #fbc531;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <button onclick="clearCanvas()">Clear</button>
+    <button id="saveButton" onclick="saveCanvas()">Lưu và gửi ảnh</button>
+  </div>
+  <canvas id="paintCanvas" width="512" height="512" style="border: 1px solid black;"></canvas>
+  
+  <script>
+    var canvas = document.getElementById("paintCanvas");
+    var ctx = canvas.getContext("2d");
+    var isDrawing = false;
+    var saveButton = document.getElementById("saveButton");
+
+    // Bắt đầu vẽ khi người dùng nhấn chuột trái và di chuyển
+    canvas.addEventListener("mousedown", startDrawing);
+    canvas.addEventListener("mousemove", draw);
+    canvas.addEventListener("mouseup", stopDrawing);
+    canvas.addEventListener("mouseout", stopDrawing);
+
+    // Khởi tạo vị trí bắt đầu vẽ
+    function startDrawing(e) {
+      isDrawing = true;
+      var rect = canvas.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    // Vẽ nếu đang trong trạng thái vẽ
+    function draw(e) {
+      if (isDrawing) {
+        var rect = canvas.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = "#fbc531"; // Thay đổi màu vẽ
+        ctx.lineWidth = 8; // Thay đổi độ dày nét vẽ
+        ctx.stroke();
+      }
+    }
+
+    // Dừng vẽ
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    // Xóa nội dung của canvas
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Lưu nội dung của canvas thành một tệp ảnh PNG và gửi đến API
+    function saveCanvas() {
+      // Ẩn nút "Lưu và gửi ảnh"
+      saveButton.classList.add("hidden");
+
+      canvas.toBlob(function (blob) {
+        var formData = new FormData();
+        formData.append("file", blob, "paint.png");
+
+        var request = new XMLHttpRequest();
+        request.open("POST", "https://ac7a-116-97-243-66.ngrok-free.app/add_sticker", true);
+        request.onload = function () {
+          if (request.status === 200) {
+            alert("Tệp ảnh đã được gửi thành công!");
+            clearCanvas(); // Xóa nội dung canvas sau khi gửi thành công
+
+            // Hiển thị lại nút "Lưu và gửi ảnh"
+            saveButton.classList.remove("hidden");
+          } else {
+            alert("Đã xảy ra lỗi khi gửi tệp ảnh.");
+
+            // Hiển thị lại nút "Lưu và gửi ảnh"
+            saveButton.classList.remove("hidden");
+          }
+        };
+        request.send(formData);
+      }, "image/png");
+    }
+  </script>
+</body>
+</html>
